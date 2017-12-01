@@ -1,0 +1,192 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<title>Progressive Web Apps</title>
+
+		<link rel="stylesheet" href="css/reveal.css">
+		<link rel="stylesheet" href="css/theme/black.css">
+
+		<!-- Theme used for syntax highlighting of code -->
+		<link rel="stylesheet" href="lib/css/zenburn.css">
+
+		<!-- Printing and PDF exports -->
+		<script>
+			var link = document.createElement( 'link' );
+			link.rel = 'stylesheet';
+			link.type = 'text/css';
+			link.href = window.location.search.match( /print-pdf/gi ) ? 'css/print/pdf.css' : 'css/print/paper.css';
+			document.getElementsByTagName( 'head' )[0].appendChild( link );
+		</script>
+	</head>
+	<body>
+		<div class="reveal">
+			<div class="slides">
+				<section>
+					<h1>Progressive Web Apps</h1>
+					<p>
+						<small>By <a href="http://andyhill.us">Andy Hill</a></small>
+					</p>
+				</section>
+				<section>
+					<h2>What Makes a Progressive Web App?</h2>
+					<ol>
+						<li class="fragment">SSL (trivial)</li>
+						<li class="fragment">Manifest File (trivial)</li>
+						<li class="fragment">Service Worker (not trivial)</li>
+					</ol>
+				</section>
+				<section>
+					<h2>SSL (https)</h2>
+					<p>SSL is required for progressive web apps. <br />An exception is made for localhost.</p>
+				</section>
+				<section>
+					<section>
+						<h2>Manifest File</h2>
+						<ol>
+							<li>Project metadata</li>
+							<li>Information for application display</li>
+							<li>Icons for various sizes</li>
+						</ol>
+						<a href="https://developer.mozilla.org/en-US/docs/Web/Manifest" target="_blank" rel="noopener">https://developer.mozilla.org/en-US/docs/Web/Manifest</a>
+					</section>
+					<section>
+<code><pre>
+{
+  "name": "Informed Electorate",
+  "short_name": "Informed Electorate",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#000044",
+  "theme_color": "#8B0000",
+  "description": "Tools for voters to stay informed.",
+  "icons": [{
+    "src": "images/touch/informed_48x48.png",
+    "sizes": "48x48",
+    "type": "image/png"
+  }, {
+  ...
+    "src": "images/touch/informed_512x512.png",
+    "sizes": "512x512",
+    "type": "image/png"
+  }],
+  "related_applications": [{
+    "platform": "web",
+    "url": "https://informedelectorate.net"
+  }]
+}	
+</pre></code>
+					</section>
+					<section>
+						<dl>
+							<dt>name</dt>
+							<dd>Provides a human-readable name for the application as it is intended to be displayed to the user</dd>
+							<dt>start_url</dt>
+							<dd>Specifies the URL that loads when a user launches the application from a device.</dd>
+							<dt>theme_color</dt>
+							<dd>Defines the default theme color for an application. This sometimes affects how the application is displayed by the OS</dd>
+						</dl>
+					</section>
+					<section>
+						<dl>
+							<dt>background_color</dt>
+							<dd>Can be used by browsers to draw the background color of a web application when the manifest is available before the style sheet has loaded. </dd>
+							<dt>display</dt>
+							<dd>fullscreen | standalone | minimal-ui | browser</dd>
+							<dt>icons</dt>
+							<dd>Specifies an array of image objects that can serve as application icons in various contexts. Standard sizes include 48x48, 72x72, 96x96, 144x144, 168x168, 192x192</dd>
+						</dl>
+					</section>					
+				</section>
+				<section>
+					<section>
+						<h2>Service Workers</h2>
+						<blockquote>
+							A service worker is a script that your browser runs in the background, separate from a web page, opening the door to features that don't need a web page or user interaction.
+						</blockquote>
+						<a href="https://developers.google.com/web/fundamentals/primers/service-workers/" target="_blank" rel="noopener">https://developers.google.com/web/fundamentals/primers/service-workers/</a>
+					</section>
+					<section>
+						<img src="images/service-worker-cache.png" width="700">
+						<p>Service workers sit between the browser and the web, allowing new possibilities.</p>
+						<p><small>(image via <a href="https://codeburst.io/work-it-featuring-service-workers-de769bd4917b" target="_blank" rel="noopener">https://codeburst.io/work-it-featuring-service-workers-de769bd4917b</a>)</small></p>
+					</section>
+					<section>
+						<h3>Register Service Worker</h3>
+						<code><pre>
+	if ('serviceWorker' in navigator) {
+	    navigator.serviceWorker.register('/sw.js')
+		    .then(function (registration) {
+		    	console.log('service worker registered');
+		    }).catch(error) {
+		    	console.err('something went wrong', error);
+		    });
+	}
+						</pre></code>
+						<p><small>This code is added to your standard JavaScript entry point. ServiceWorkerContainer.register() has a required first argument: a string representing the path to the service worker code, and an optional second options argument. Currently, the only available option is "scope", which indicates what range of URLs a service worker can control. The default value for scope is './'. </small></p>
+					</section>
+					<section>
+						<code><pre>
+						<h3>Install Event</h3>
+const STATIC_CACHE = 'informed-cache-v1';
+const urlsToCache = [
+  '/css/app.css',
+  '/js/app.js',
+  ...
+  'https://fonts.googleapis.com/css?family=UnifrakturMaguntia',
+];
+self.addEventListener('install', function(event) {
+  // Perform install steps
+  event.waitUntil(
+    caches.open(STATIC_CACHE)
+      .then(function(cache) {
+        return cache.addAll(urlsToCache);
+      })
+  );
+});							
+						</pre></code>
+						<p><small>The install event runs once when the service worker is first loaded or modified.<br /> This is when you cache static assets.</small></p>
+					</section>
+					<section>
+						<code><pre>
+
+this.addEventListener('activate', function(event) {
+  const cacheWhitelist = [STATIC_CACHE];
+  event.waitUntil(
+    caches.keys().then(function(keyList) {
+      return Promise.all(keyList.map(function(key) {
+        if (cacheWhitelist.indexOf(key) === -1) {
+          return caches.delete(key);
+        }
+      }));
+    })
+  );
+});							
+						</pre></code>
+						<p><small>The activate event runs after the install event.<br /> This is a common place to clear old caches.</small></p>
+					</section>
+				</section>
+				
+			</div>
+		</div>
+
+		<script src="lib/js/head.min.js"></script>
+		<script src="js/reveal.js"></script>
+
+		<script>
+			// More info about config & dependencies:
+			// - https://github.com/hakimel/reveal.js#configuration
+			// - https://github.com/hakimel/reveal.js#dependencies
+			Reveal.initialize({
+				dependencies: [
+					{ src: 'plugin/markdown/marked.js' },
+					{ src: 'plugin/markdown/markdown.js' },
+					{ src: 'plugin/notes/notes.js', async: true },
+					{ src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } }
+				]
+			});
+		</script>
+	</body>
+</html>
