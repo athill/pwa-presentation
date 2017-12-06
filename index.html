@@ -30,6 +30,17 @@
 						<small>By <a href="http://andyhill.us">Andy Hill</a></small>
 					</p>
 				</section>
+
+				<section>
+					<h2>Why Progressive Web Apps?</h2>
+					<ul>
+						<li class="fragment">Offline Functionality</li>
+						<li class="fragment">Client-side Caching</li>
+						<li class="fragment">Push Notifications</li>
+						<li class="fragment">Native App Behavior</li>
+					</ul>
+				</section>
+
 				<section>
 					<h2>What Makes a Progressive Web App?</h2>
 					<ol>
@@ -38,9 +49,29 @@
 						<li class="fragment">Service Worker (not trivial)</li>
 					</ol>
 				</section>
+
+				<section>
+					<h2>Experience</h2>
+					<img src="images/add-app.png" style="height: 400px">
+					<img src="images/app-list.png" style="height: 400px">
+					<img src="images/its-an-app.png" style="height: 400px">
+					<img src="images/app-settings.png" style="height: 400px">
+				</section>
+
+				<section>
+					<h2>Support</h2>
+					<li><a href="https://caniuse.com/#feat=serviceworkers" target="_blank" rel="noopener"></a>Can I Use</li>
+					<li><a href="https://jakearchibald.github.io/isserviceworkerready/" target="_blank" rel="noopener">Is Service Worker Ready</a></li>
+					<li><a href="https://dockyard.com/blog/2017/07/13/safari-ios-and-progressive-web-apps" target="_blank" rel="noopener">iOS/Safari</a></li>
+					<li><a href="https://www.windowscentral.com/faq-progressive-web-apps-windows-10" target="_blank" rel="noopener">Microsoft/Edge</a></li>
+					<li><a href="http://www.androidpolice.com/2017/12/05/google-wants-progressive-web-apps-replace-chrome-apps/" target="_blank" rel="noopener">http://www.androidpolice.com/2017/12/05/google-wants-progressive-web-apps-replace-chrome-apps/</a></li>
+
+				</section>
+
 				<section>
 					<h2>SSL (https)</h2>
 					<p>SSL is required for progressive web apps. <br />An exception is made for localhost.</p>
+					<p>You can create certs for SSL via <a href="https://letsencrypt.org/" target="_blank" rel="noopener">Let&apos;s Encrypt</a></p>
 				</section>
 				<section>
 					<section>
@@ -48,7 +79,8 @@
 						<ol>
 							<li>Project metadata</li>
 							<li>Information for application display</li>
-							<li>Icons for various sizes</li>
+							<li>Icons of various sizes</li>
+							<li>Place in manifest.json in site root</li>
 						</ol>
 						<a href="https://developer.mozilla.org/en-US/docs/Web/Manifest" target="_blank" rel="noopener">https://developer.mozilla.org/en-US/docs/Web/Manifest</a>
 					</section>
@@ -150,8 +182,8 @@ self.addEventListener('install', function(event) {
 						<p><small>The install event runs once when the service worker is first loaded or modified.<br /> This is when you cache static assets.</small></p>
 					</section>
 					<section>
+						<h3>Activate Event</h3>
 						<code><pre>
-
 this.addEventListener('activate', function(event) {
   const cacheWhitelist = [STATIC_CACHE];
   event.waitUntil(
@@ -167,6 +199,155 @@ this.addEventListener('activate', function(event) {
 						</pre></code>
 						<p><small>The activate event runs after the install event.<br /> This is a common place to clear old caches.</small></p>
 					</section>
+					<section>
+						<h3>Fetch Event</h3>
+						<code><pre>
+self.addEventListener('fetch', function(event) {
+  const requestUrl = new URL(event.request.url);
+  if (requestUrl.pathname.startsWith('/api/')) {
+    event.respondWith(onlineFirstStrategy(event));
+    return;
+  }
+
+  event.respondWith(cacheFirstStrategy(event));
+});							
+						</pre></code>
+						<p><small>The fetch event intercepts fetches made in your JS code.<br /> Here, you can decide what to do before going to the network.</small></p>
+					</section>
+					<section>
+						<h3>Cache First</h3>
+						<code><pre>
+function cacheFirstStrategy(event) {
+  return caches.match(event.request)
+    .then(function(response) {
+      // Cache hit - return response
+      if (response) {
+        return response;
+      }
+      var fetchRequest = event.request.clone();
+      return fetch(fetchRequest)
+        .then(function(response) {
+          var responseToCache = response.clone();
+          caches.open(STATIC_CACHE)
+            .then(function(cache) {
+              cache.put(event.request, responseToCache);
+            });
+          return response;
+      	})
+        .catch(function(err) {
+          toast(event, 'You appear to be offline. Please check your internet connection.');
+          return;
+        });
+    }); 
+}							
+						</pre></code>
+					</section>
+					<section>
+						<h3>Online First</h3>
+						<code><pre>
+function onlineFirstStrategy(event) {
+  return fetch(event.request)
+    .then(function(response) {
+      var responseToCache = response.clone();
+      caches.open(DYNAMIC_CACHE).then(function(cache) {
+         cache.put(event.request, responseToCache);
+      })
+      return response;
+    })
+    .catch(function() {
+      return caches.match(event.request, { cacheName: DYNAMIC_CACHE })
+        .then(function(match) {
+          if (match) {
+            toast(event, 'You appear to be offline. Returning result from local cache.');
+            return match;            
+          } else {
+            toast(event, 'You appear to be offline. Please check your internet connection.');
+            return;              
+          }
+        })
+    })
+}							
+						</pre></code>
+					</section>
+					<section>
+						<h3>Communicate between code and service worker</h3>
+						<code><pre>
+//// in service worker
+self.addEventListener('message', function(event) {
+  if (event.data.action === 'skipWaiting') {
+    self.skipWaiting();
+  }
+});					
+
+//// in js code
+worker.postMessage({action: 'skipWaiting'});		
+						</pre></code>
+					</section>
+					<section>
+						<h3>Communicate between service worker and code</h3>
+						<code><pre>
+//// in code
+navigator.serviceWorker.addEventListener('message', event => {
+  indexController._sendMessage(event.data.msg);
+}); 		
+
+//// in service worker
+if (!event.clientId) return;
+
+// Get the client.
+clients.get(event.clientId)
+  .then(function(client) {
+    client.postMessage({
+      msg: message,
+    });       
+  })
+  .catch(function(err)  {
+    return;
+  });
+						</pre></code>
+					</section>
+					<section>
+						<h3>Push Notifications</h3>
+						<blockquote><small>
+						<p>A notification is a message that pops up on the user's device. Notifications can be triggered locally by an open application, or they can be "pushed" from the server to the user even when the app is not running. They allow your users to opt-in to timely updates and allow you to effectively re-engage users with customized content.</p>
+
+						<p>Push Notifications are assembled using two APIs: the Notifications API and the Push API. The Notifications API lets the app display system notifications to the user. The Push API allows a service worker to handle Push Messages from a server, even while the app is not active.</p>				
+						</small></blockquote>
+						<a href="https://developers.google.com/web/ilt/pwa/introduction-to-push-notifications" target="_blank" rel="noopener">https://developers.google.com/web/ilt/pwa/introduction-to-push-notifications</a>
+					</section>
+				</section>
+
+				<section>
+					<h2>IndexedDB</h2>
+					<ul>
+						<li>Use to store more complex data and cache metadata</li>
+						<li>For example, store data with a date and regularly purge older data</li>
+						<li>NoSQL. Convoluted interface. Reminiscent of XHR</li>
+						<li><a href="https://github.com/jakearchibald/idb" target="_blank" rel="noopener">IndexedDB Promised</a> is recommended. Wraps API in promises.</li>
+						<li><a href="https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API" target="_blank" rel="noopener">https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API</a>
+					</ul>
+				</section>
+
+				<section>
+					<h2>Google Lighthouse</h2>
+					<ul>
+						<li><a href="https://developers.google.com/web/tools/lighthouse/" target="_blank" rel="noopener">https://developers.google.com/web/tools/lighthouse/</a></li>
+						<li>In Chrome Dev Tools under Audit-&gt;Run an Audit</li>
+						<li>Provides performance report including information about PWA status</li>
+					</ul>
+				</section>
+
+
+				<section>
+					<h2>Resources</h2>
+					<ul>
+						<li><a href="https://www.udacity.com/course/offline-web-applications--ud899" target="_blank" rel="noopener">Udacity&apos;s Offline Web Applications course</a></li>
+						<li><a href="https://github.com/jakearchibald/wittr/" target="_blank" rel="noopener">Wittr</a>: Code used in the course above</li>
+						<li><a href="https://github.com/athill/informedelectorate.net/" target="_blank" rel="noopener">https://github.com/athill/informedelectorate.net/</a>: Code used in demonstrations</li>
+						<li><a href="https://www.pwabuilder.com/generator" target="_blank" rel="noopener">PWA Builder</a></li>
+						<li><a href="https://developers.google.com/web/tools/workbox/" target="_blank" rel="noopener">Workbox</a></li>
+					</ul>
+					
 				</section>
 				
 			</div>
