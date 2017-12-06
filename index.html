@@ -12,6 +12,18 @@
 		<!-- Theme used for syntax highlighting of code -->
 		<link rel="stylesheet" href="lib/css/zenburn.css">
 
+		<style type="text/css">
+			.screencap {
+				display: inline-block !important;
+			}
+			.screencap img {
+				height: 400px;
+			}
+			.screencap figcaption {
+				font-size: 0.5em;
+			}
+		</style>
+
 		<!-- Printing and PDF exports -->
 		<script>
 			var link = document.createElement( 'link' );
@@ -43,10 +55,22 @@
 
 				<section>
 					<h2>Experience</h2>
-					<img src="images/add-app.png" style="height: 400px">
-					<img src="images/app-list.png" style="height: 400px">
-					<img src="images/its-an-app.png" style="height: 400px">
-					<img src="images/app-settings.png" style="height: 400px">
+					<figure class="screencap">
+						<img src="images/add-app.png" style="height: 400px">
+						<figcaption>Invitation to install</figcaption>
+					</figure>
+					<figure class="screencap">
+						<img src="images/app-list.png" style="height: 400px">
+						<figcaption>In app list</figcaption>
+					</figure>
+					<figure class="screencap">
+						<img src="images/its-an-app.png" style="height: 400px">
+						<figcaption>App experience</figcaption>
+					</figure>
+					<figure class="screencap">						
+						<img src="images/app-settings.png" style="height: 400px">
+						<figcaption>App in settings</figcaption>
+					</figure>
 				</section>
 
 				<section>
@@ -344,8 +368,8 @@ clients.get(event.clientId)
 						<li><a href="https://www.udacity.com/course/offline-web-applications--ud899" target="_blank" rel="noopener">Udacity&apos;s Offline Web Applications course</a></li>
 						<li><a href="https://github.com/jakearchibald/wittr/" target="_blank" rel="noopener">Wittr</a>: Code used in the course above</li>
 						<li><a href="https://github.com/athill/informedelectorate.net/" target="_blank" rel="noopener">https://github.com/athill/informedelectorate.net/</a>: Code used in demonstrations</li>
-						<li><a href="https://www.pwabuilder.com/generator" target="_blank" rel="noopener">PWA Builder</a></li>
-						<li><a href="https://developers.google.com/web/tools/workbox/" target="_blank" rel="noopener">Workbox</a></li>
+						<li><a href="https://www.pwabuilder.com/generator" target="_blank" rel="noopener">PWA Builder</a>: Visual tool to create manifest and service worker</li>
+						<li><a href="https://developers.google.com/web/tools/workbox/" target="_blank" rel="noopener">Workbox</a>: Collection of libraries and build tools that make it easy to store your website’s files locally, on your users&apos; devices.</li>
 					</ul>
 					
 				</section>
